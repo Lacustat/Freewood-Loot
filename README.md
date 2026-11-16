@@ -1,6 +1,6 @@
 # Freewood-Loot
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.7 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.8 · Interface 16001 (World of Warcraft: Forever).
 
 ![loot](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/loot.jpg)
 
@@ -8,6 +8,7 @@
 - [Deutsch](#deutsch)
 - [English](#english)
 - [Tastenbelegung · Key bindings](#tastenbelegung--key-bindings)
+- [Änderungen · Changes](#änderungen--changes)
 
 ## Deutsch
 
@@ -66,3 +67,6 @@ GPL-3.0, see `LICENSE`.
 ## Tastenbelegung · Key bindings
 **DE:** Unter Optionen > Tastaturbelegung gibt es einen eigenen Abschnitt für dieses Modul. Dort lässt sich eine Taste zum Öffnen und Schließen des Reiters belegen (zum Beispiel J für die Gilde). Ist der Reiter schon offen, schließt dieselbe Taste das Fenster. Nach der Installation einmal das Spiel neu starten, damit die neue Datei Bindings.xml gelesen wird.
 **EN:** Options > Key Bindings has its own section for this module. Bind a key to open and close the tab (for example J for the guild). If the tab is already open, the same key closes the window. Restart the game once after installing so the new Bindings.xml file is read.
+
+## Änderungen · Changes
+**0.1.8 DE:** Die Item-Suche schließt jetzt die Reagenzientasche (Tasche 5, Kräuter und Erze) ein. Freie Plätze werden weiter nur in den normalen Taschen gezählt. Test `texlua tests/reagentbag_test.lua`. Ungeprüft im Spiel. **EN:** The item search now includes the reagent bag (bag 5, herbs and ores). Free slots are still counted in the normal bags only. Test `texlua tests/reagentbag_test.lua`. Unchecked in game.

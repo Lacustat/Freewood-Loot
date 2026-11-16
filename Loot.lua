@@ -104,6 +104,8 @@ end
 local function BagCount()
     return tonumber(_G.NUM_BAG_SLOTS) or 4
 end
+-- Taschen fuer die Item-Suche: mit Reagenzientasche (Tasche 5, Forever_Failure F-31)
+local function ScanBagCount() return math.max(BagCount(), tonumber(_G.NUM_TOTAL_EQUIPPED_BAG_SLOTS) or 5) end
 
 local function CursorItemID()
     if not GetCursorInfo then
@@ -265,7 +267,7 @@ end
 function Loot:Scan()
     local list = {}
     if self.chardb then
-        for bag = 0, BagCount() do
+        for bag = 0, ScanBagCount() do
             for slot = 1, NumSlots(bag) do
                 local id, count = SlotItem(bag, slot)
                 if id and self.chardb.blacklist[id] then
