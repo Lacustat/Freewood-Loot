@@ -371,6 +371,7 @@ UI:RegisterTab("loot", {
 
 if UI.RegisterSettingsSection then
     UI:RegisterSettingsSection("loot", {
+        module = "loot",       -- seit 0.2.0: im Reiter Beute hinter "Einstellungen" (Core 0.54.0)
         category = "modules",
         order = 110,
         height = 180,
@@ -408,6 +409,142 @@ if UI.RegisterSettingsSection then
         refresh = function(frame)
             frame.Refresh()
         end,
+    })
+end
+
+-- Zahlenfeld (nur Ziffern): Uebernahme mit Enter oder beim Verlassen, Wert wird begrenzt
+local function NumberField(parent, labelText, getFn, setFn)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetHeight(26)
+    local box = UI.CreatePanel(row, "card", "bronze")
+    box:SetSize(54, 24)
+    box:SetPoint("LEFT", row, "LEFT", 0, 0)
+    local edit = CreateFrame("EditBox", nil, box)
+    edit:SetAutoFocus(false)
+    edit:SetPoint("TOPLEFT", box, "TOPLEFT", 6, -2)
+    edit:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -6, 2)
+    edit:SetMaxLetters(2)
+    if edit.SetNumeric then edit:SetNumeric(true) end
+    if not edit:SetFont(UI.GetFontPath("body"), 12, "") then
+        edit:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
+    end
+    edit:SetTextColor(UI.Color("text"))
+    edit:SetJustifyH("CENTER")
+    local function Apply(self)
+        setFn(self:GetText())
+        self:SetText(tostring(getFn()))
+    end
+    edit:SetScript("OnEnterPressed", function(self) Apply(self) self:ClearFocus() end)
+    edit:SetScript("OnEditFocusLost", Apply)
+    edit:SetScript("OnEscapePressed", function(self) self:SetText(tostring(getFn())) self:ClearFocus() end)
+    row.label = UI.CreateLabel(row, labelText, { size = 12 })
+    row.label:SetPoint("LEFT", box, "RIGHT", 10, 0)
+    row.label:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    row.edit = edit
+    function row:Refresh() if not edit:HasFocus() then edit:SetText(tostring(getFn())) end end
+    row:Refresh()
+    return row
+end
+
+if UI.RegisterSettingsSection then
+    UI:RegisterSettingsSection("loot-junk", {
+        module = "loot",
+        category = "modules",
+        order = 111,
+        height = 360,
+        build = function(parent)
+            local L = FW.L
+            local J = Loot.Junk
+            local S = function() return Loot.db.settings end
+            local f, stack = UI.CreateSection(parent, L.LOOT_JUNK_HEADER)
+            local ask = UI.CreateCheckbox(f, L.LOOT_JUNK_ASK, function() return S().junkAsk ~= false end,
+                function(v) S().junkAsk = v and true or false end)
+            stack:Add(ask, { fit = true, gap = 4 })
+            local free = NumberField(f, L.LOOT_JUNK_FREE, function() return J.FreeLimit() end, function(v)
+                local n = tonumber(v)
+                if n then S().junkFree = math.max(0, math.min(J.MAX_FREE, math.floor(n))) end
+            end)
+            stack:Add(free, { height = 26, gap = 8, stretch = true })
+            local count = NumberField(f, L.LOOT_JUNK_COUNT, function() return J.Count() end, function(v)
+                local n = tonumber(v)
+                if n then S().junkCount = math.max(1, math.min(J.MAX_COUNT, math.floor(n))) end
+            end)
+            stack:Add(count, { height = 26, gap = 4, stretch = true })
+            local useList = UI.CreateCheckbox(f, L.LOOT_JUNK_USELIST, function() return S().junkBlacklist ~= false end,
+                function(v) S().junkBlacklist = v and true or false end)
+            stack:Add(useList, { fit = true, gap = 8 })
+            stack:Add(UI.CreateLabel(f, L.LOOT_JUNK_USELIST_NOTE, { size = 11, color = "textDim", justifyV = "TOP" }), { fit = true, gap = 2, indent = 28 })
+
+            -- Liste "Nie vorschlagen"
+            stack:Add(UI.CreateLabel(f, L.LOOT_NEVER_HEADER, { size = 13, color = "gold" }), { height = 18, gap = 14 })
+            stack:Add(UI.CreateLabel(f, L.LOOT_NEVER_NOTE, { size = 11, color = "textDim", justifyV = "TOP" }), { fit = true, gap = 2 })
+            local holder = CreateFrame("Frame", nil, f)
+            holder:SetHeight(20)
+            stack:Add(holder, { height = 20, gap = 6, stretch = true })
+            local empty = UI.CreateLabel(holder, L.LOOT_NEVER_EMPTY, { size = 11, color = "textDim" })
+            empty:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, -2)
+            local rows = {}
+            local NEVER_H = 24
+            local function NeverRow(i)
+                local r = rows[i]
+                if r then return r end
+                r = CreateFrame("Frame", nil, holder)
+                r:SetHeight(NEVER_H)
+                r:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, -(i - 1) * NEVER_H)
+                r:SetPoint("TOPRIGHT", holder, "TOPRIGHT", 0, -(i - 1) * NEVER_H)
+                r.icon = r:CreateTexture(nil, "ARTWORK")
+                r.icon:SetSize(18, 18)
+                r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                r.icon:SetPoint("LEFT", r, "LEFT", 0, 0)
+                r.remove = UI.CreateButton(r, "X", 24, 20, function()
+                    if r.itemID then Loot:RemoveNever(r.itemID) end
+                end, "danger")
+                r.remove:SetPoint("RIGHT", r, "RIGHT", 0, 0)
+                UI.AttachTooltip(r.remove, function() return FW.L.LOOT_NEVER_REMOVE end, "")
+                r.name = UI.CreateLabel(r, "", { size = 12 })
+                r.name:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
+                r.name:SetPoint("RIGHT", r.remove, "LEFT", -6, 0)
+                r.name:SetWordWrap(false)
+                HookItemTip(r)
+                rows[i] = r
+                return r
+            end
+            function f.FillNever()
+                local list = Loot:NeverList()
+                for i, e in ipairs(list) do
+                    local r = NeverRow(i)
+                    FillItem(r, e.id, e.name)
+                    if e.listed then
+                        local base = r.name:GetText() or ""
+                        r.name:SetText(base .. "  |cffff8040" .. FW.L.LOOT_NEVER_LISTED .. "|r")
+                        FW.Util.RequestItem(e.id, function(info)
+                            if r.itemID == e.id and info then
+                                r.name:SetText(ColoredName(info.name, info.quality, e.id) .. "  |cffff8040" .. FW.L.LOOT_NEVER_LISTED .. "|r")
+                            end
+                        end)
+                    end
+                    r:Show()
+                end
+                for i = #list + 1, #rows do rows[i].itemID = nil rows[i]:Hide() end
+                if #list == 0 then empty:Show() else empty:Hide() end
+                local h = math.max(20, #list * NEVER_H)
+                if f.neverH ~= h then
+                    f.neverH = h
+                    for _, it in ipairs(stack.items) do if it.w == holder then it.height = h end end
+                    stack:Layout()
+                end
+            end
+            function f.Refresh()
+                ask:Refresh() free:Refresh() count:Refresh() useList:Refresh()
+                f.FillNever()
+            end
+            FW:On("LOOT_NEVER_CHANGED", function() if f:IsShown() then f.FillNever() end end, f)
+            FW:On("LOOT_LIST_CHANGED", function() if f:IsShown() then f.FillNever() end end, f)
+            stack:Layout()
+            f.FillNever()
+            return f
+        end,
+        refresh = function(frame) frame.Refresh() end,
     })
 end
 

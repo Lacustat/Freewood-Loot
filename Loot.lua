@@ -12,7 +12,10 @@
 --   blacklist = { [itemID] = { name, added } }
 --   recent    = { { id, t }, ... }   zuletzt erhaltene Items, neueste zuerst
 --   log       = { { id, name, count, t }, ... }  zuletzt geloeschte Items, neueste zuerst
---   settings  = { enabled, autoLoot, chat }
+--   never     = { [itemID] = { name, added } }   nie zum Loeschen vorschlagen (Taschen-Vorschlag, LootJunk.lua)
+--   settings  = { enabled, autoLoot, chat, junkAsk, junkFree, junkCount, junkBlacklist }
+-- Loot.once (nur fuer die Sitzung): einmal zu loeschende Stapel aus dem Taschen-Vorschlag, ohne Blacklist
+--   { ["Tasche:Platz"] = itemID }
 
 local ADDON, NS = ...
 
@@ -47,10 +50,12 @@ local Loot = FW:NewModule("Loot", {
     description = L.LOOT_DESC,
     -- Einstellungen gelten fuer den Account, Blacklist/Zuletzt/Protokoll nur fuer den Charakter
     defaults = {
-        settings = { enabled = true, autoLoot = true, chat = true },
+        settings = { enabled = true, autoLoot = true, chat = true,
+            junkAsk = true, junkFree = 2, junkCount = 6, junkBlacklist = true },
     },
     charDefaults = {
         blacklist = {},
+        never = {},
         recent = {},
         log = {},
     },
@@ -58,7 +63,8 @@ local Loot = FW:NewModule("Loot", {
 NS.Loot = Loot
 FW.Loot = Loot
 
-Loot.pending = {}   -- { { bag, slot, id, count } }
+Loot.pending = {}   -- { { bag, slot, id, count, once } }
+Loot.once = {}      -- { ["Tasche:Platz"] = itemID }
 Loot.failures = 0
 Loot.blocked = false
 
@@ -195,6 +201,64 @@ function Loot:Remove(itemID)
     return false
 end
 
+------------------------------------------------------------------------
+-- Einmal loeschen (ohne Blacklist) und "Nie vorschlagen"
+------------------------------------------------------------------------
+
+-- Einen Stapel einmal zum Loeschen vormerken (geloescht wie Blacklist-Items mit dem naechsten Klick in die Spielwelt)
+function Loot:MarkOnce(bag, slot, itemID)
+    if type(bag) ~= "number" or type(slot) ~= "number" or not itemID then return false end
+    local id = SlotItem(bag, slot)
+    if id ~= itemID then return false end
+    self.once[bag .. ":" .. slot] = itemID
+    self:Scan()
+    return true
+end
+
+function Loot:IsNever(itemID)
+    return itemID ~= nil and self.chardb.never ~= nil and self.chardb.never[itemID] ~= nil
+end
+
+-- Rueckgabe: true, auchAufBlacklist
+function Loot:AddNever(itemID, name)
+    local id = self.ParseItem(itemID)
+    if not id then return false end
+    self.chardb.never = self.chardb.never or {}
+    if not self.chardb.never[id] then
+        local n = name or ItemName(id)
+        self.chardb.never[id] = { name = n and n:sub(1, 80) or nil, added = time() }
+        FW:Fire("LOOT_NEVER_CHANGED")
+    end
+    return true, self.chardb.blacklist[id] ~= nil
+end
+
+function Loot:RemoveNever(itemID)
+    if self.chardb.never and self.chardb.never[itemID] then
+        self.chardb.never[itemID] = nil
+        FW:Fire("LOOT_NEVER_CHANGED")
+        return true
+    end
+    return false
+end
+
+-- { { id, name, listed } } nach Name
+function Loot:NeverList()
+    local list = {}
+    for id, entry in pairs(self.chardb.never or {}) do
+        local name = ItemName(id) or entry.name
+        list[#list + 1] = { id = id, name = name, listed = self.chardb.blacklist[id] ~= nil }
+    end
+    table.sort(list, function(a, b)
+        local an, bn = a.name and a.name:lower() or "\255", b.name and b.name:lower() or "\255"
+        if an ~= bn then return an < bn end
+        return a.id < b.id
+    end)
+    return list
+end
+
+Loot.SlotItem = SlotItem
+Loot.NumSlots = NumSlots
+
 -- Sortierte Liste { { id, name } } (nach Name, unbekannte ans Ende)
 function Loot:List()
     local list = {}
@@ -270,8 +334,16 @@ function Loot:Scan()
         for bag = 0, ScanBagCount() do
             for slot = 1, NumSlots(bag) do
                 local id, count = SlotItem(bag, slot)
+                local key = bag .. ":" .. slot
+                local onceID = self.once[key]
+                if onceID and onceID ~= id then
+                    self.once[key] = nil    -- der Stapel ist nicht mehr da (verkauft, verschoben): Merker weg
+                    onceID = nil
+                end
                 if id and self.chardb.blacklist[id] then
                     list[#list + 1] = { bag = bag, slot = slot, id = id, count = count }
+                elseif id and onceID then
+                    list[#list + 1] = { bag = bag, slot = slot, id = id, count = count, once = true }
                 end
             end
         end
@@ -321,7 +393,8 @@ function Loot:DeleteOne()
         return false, "none"
     end
     local id, count, locked = SlotItem(entry.bag, entry.slot)
-    if id ~= entry.id or locked or not self.chardb.blacklist[id] then
+    local key = entry.bag .. ":" .. entry.slot
+    if id ~= entry.id or locked or not (self.chardb.blacklist[id] or self.once[key] == id) then
         return false, "changed"
     end
 
@@ -352,6 +425,7 @@ function Loot:DeleteOne()
     end
 
     self.failures = 0
+    self.once[key] = nil
     local name = AddLog(self, entry.id, count)
     if self.db.settings.chat then
         FW:Print(string.format(FW.L.LOOT_DELETED, name, count or 1))

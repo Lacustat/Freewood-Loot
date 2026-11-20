@@ -3,12 +3,13 @@
 ## Notes: Blacklist for loot: picks up listed items and deletes them with your next click in the world.
 ## Notes-deDE: Blacklist für Beute: nimmt gelistete Items mit und löscht sie mit deinem nächsten Klick in der Spielwelt.
 ## Author: Lacustat
-## Version: 0.1.8
+## Version: 0.2.0
 ## Dependencies: Freewood-Core
 ## IconTexture: Interface\Icons\INV_Misc_Bag_10
 ## X-Wago-ID: 4N2bz4NL
 
 Locales.lua
 Loot.lua
+LootJunk.lua
 LootUI.lua
 Bindings.lua
