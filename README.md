@@ -1,6 +1,6 @@
 # Freewood-Loot
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.2.0 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.3.0 · Interface 16001 (World of Warcraft: Forever).
 
 ![loot](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/loot.jpg)
 
@@ -75,6 +75,8 @@ GPL-3.0, see `LICENSE`.
 **EN:** Options > Key Bindings has its own section for this module. Bind a key to open and close the tab (for example J for the guild). If the tab is already open, the same key closes the window. Restart the game once after installing so the new Bindings.xml file is read.
 
 ## Änderungen · Changes
+**0.3.0 DE:** Erklärungen als goldenes „i“ aus dem Core (braucht Core 0.58.0): „Item hinzufügen“ hinter der Überschrift (die Liste darunter rückt hoch), Hinweise der Einstellungen und des Taschen-voll-Vorschlags (Liste nutzen, „Nie vorschlagen“) hinter den Überschriften. Ungeprüft im Spiel. **EN:** explanations as the golden "i" from the Core (needs Core 0.58.0): "Add item" behind the heading (the list below moves up), notes of the settings and of the bag-full suggestion behind the headings. Unchecked in game.
+
 **0.2.0 DE:** Vorschlag bei vollen Taschen aus dem Levelplaner übernommen (`LootJunk.lua`), mit Einstellungen, Liste „Nie vorschlagen“ und einmaligem Löschen ohne Blacklist; Einstellungen im Modul. Test `texlua tests/junk_test.lua`. Ungeprüft im Spiel. **EN:** Bags-full suggestion moved over from the level planner (`LootJunk.lua`), with settings, the list "Never suggest" and one-time deleting without the blacklist; settings inside the module. Test `texlua tests/junk_test.lua`. Unchecked in game.
 
 **0.1.8 DE:** Die Item-Suche schließt jetzt die Reagenzientasche (Tasche 5, Kräuter und Erze) ein. Freie Plätze werden weiter nur in den normalen Taschen gezählt. Test `texlua tests/reagentbag_test.lua`. Ungeprüft im Spiel. **EN:** The item search now includes the reagent bag (bag 5, herbs and ores). Free slots are still counted in the normal bags only. Test `texlua tests/reagentbag_test.lua`. Unchecked in game.

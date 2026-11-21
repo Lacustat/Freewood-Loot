@@ -198,23 +198,20 @@ local function Build(content)
         end
     end
 
-    local hint = UI.CreateLabel(right, L.LOOT_ADD_HINT, { size = 11, color = "textDim", justifyV = "TOP" })
-    hint:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -126)
-    hint:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -126)
-    hint:SetHeight(28)
-    hint:SetWordWrap(true)
-    status:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -156)
-    status:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -156)
+    -- Erklaerung als goldenes "i" hinter der Ueberschrift (0.3.0)
+    if UI.CreateInfoIcon then UI.CreateInfoIcon(right, L.LOOT_ADD_HEADER, L.LOOT_ADD_HINT):SetPoint("LEFT", addTitle, "RIGHT", 6, 0) end
+    status:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -128)
+    status:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -128)
     status:SetWordWrap(false)
 
     -- Zuletzt erhalten
     local recentTitle = UI.CreateLabel(right, L.LOOT_RECENT_HEADER, { font = "heading", size = 14, color = "goldLight" })
-    recentTitle:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -182)
+    recentTitle:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -156)
     local recentDivider = UI.CreateDivider(right)
-    recentDivider:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -206)
-    recentDivider:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -206)
+    recentDivider:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -180)
+    recentDivider:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -180)
     local recentScroll = UI.CreateScrollFrame(right)
-    recentScroll:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -214)
+    recentScroll:SetPoint("TOPLEFT", right, "TOPLEFT", 0, -188)
     recentScroll:SetPoint("BOTTOMRIGHT", right, "BOTTOMRIGHT", 0, 164)
     local recentEmpty = UI.CreateLabel(recentScroll.child, L.LOOT_RECENT_EMPTY, { size = 12, color = "textDim" })
     recentEmpty:SetPoint("TOPLEFT", recentScroll.child, "TOPLEFT", 4, -6)
@@ -395,8 +392,7 @@ if UI.RegisterSettingsSection then
                 boxes[#boxes + 1] = cb
             end
 
-            local note = UI.CreateLabel(f, L.LOOT_SET_NOTE, { size = 11, color = "textDim", justifyV = "TOP" })
-            stack:Add(note, { fit = true, gap = 10 })
+            if f.AddInfo then f:AddInfo(L.LOOT_SET_NOTE) end
 
             function f.Refresh()
                 for _, cb in ipairs(boxes) do
@@ -473,11 +469,11 @@ if UI.RegisterSettingsSection then
             local useList = UI.CreateCheckbox(f, L.LOOT_JUNK_USELIST, function() return S().junkBlacklist ~= false end,
                 function(v) S().junkBlacklist = v and true or false end)
             stack:Add(useList, { fit = true, gap = 8 })
-            stack:Add(UI.CreateLabel(f, L.LOOT_JUNK_USELIST_NOTE, { size = 11, color = "textDim", justifyV = "TOP" }), { fit = true, gap = 2, indent = 28 })
+            if f.AddInfo then f:AddInfo(L.LOOT_JUNK_USELIST_NOTE) end
 
             -- Liste "Nie vorschlagen"
             stack:Add(UI.CreateLabel(f, L.LOOT_NEVER_HEADER, { size = 13, color = "gold" }), { height = 18, gap = 14 })
-            stack:Add(UI.CreateLabel(f, L.LOOT_NEVER_NOTE, { size = 11, color = "textDim", justifyV = "TOP" }), { fit = true, gap = 2 })
+            if f.AddInfo then f:AddInfo(L.LOOT_NEVER_NOTE) end
             local holder = CreateFrame("Frame", nil, f)
             holder:SetHeight(20)
             stack:Add(holder, { height = 20, gap = 6, stretch = true })
